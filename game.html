@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fight</title>
+
+    <style>
+        canvas{
+            background-color: black;
+        }
+
+        .counter{
+            font-size: 60px;
+            color: rgb(66, 66, 167);
+        }
+
+        .maps-center{
+            margin-left: 10px;
+        }
+    </style>
+
+
+    <script>
+        let KEY_SPACE = false; //32
+        let KEY_UP = false;    //38
+        let KEY_DOWN = false;  //40
+        let canvas;
+        let ctx; //möglichkeit in unser canvas regelmäßig dinge einzufügen
+        let backgroundImage = new Image();
+        let count = 0;
+        let cancelled = false;
+        
+
+        let rocket = {
+            x:30,
+            y: 200,
+            width: 100,
+            height: 50,
+            src: "img/rocket.png"
+        };
+
+        let ufos = [];
+        let shots = [];
+
+        document.onkeydown = function(e){
+            if(e.keyCode ==32){ //Leertaste gedrückt
+                KEY_SPACE = true;
+            }
+
+            if(e.keyCode ==38){ //Nach oben gedrückt
+                KEY_UP = true;
+            }
+
+            if(e.keyCode ==40){ //Nach unten gedrückt
+                KEY_DOWN = true;
+            }
+
+            if(cancelled){
+                KEY_UP = false;
+                KEY_DOWN = false;
+                KEY_SPACE = false;
+            }
+        }
+
+        document.onkeyup = function(e){
+            if(e.keyCode ==32){ //Leertaste losgelassen
+                KEY_SPACE = false;
+            }
+
+            if(e.keyCode ==38){ //Nach oben losgelassen
+                KEY_UP = false;
+            }
+
+            if(e.keyCode ==40){ //Nach unten losgelassen
+                KEY_DOWN = false;
+            }
+
+            if(cancelled){
+                KEY_UP = false;
+                KEY_DOWN = false;
+                KEY_SPACE = false;
+            }
+        }
+
+        function startGame(){
+            canvas = document.getElementById("canvas"); //erst ausführen, wenn unsere seite geladen wurde 
+            ctx = canvas.getContext("2d");  //erst ausführen, wenn unsere seite geladen wurde 
+            loadImages();
+            setInterval(updateShip, 1000/40);
+            setInterval(updateUfosAndShots, 1000/25);
+            setInterval(createUfos, 2000);
+            setInterval(checkForCollison, 1000/ 25);
+            setInterval(checkForShots, 1000);
+            draw();
+            //calculate
+        }
+
+        function checkForShots(){
+                if(KEY_SPACE){
+                    KEY_SPACE = false;
+                    let shot ={
+                        x: rocket.x + 110,
+                        y: rocket.y + 22,
+                        width: 20,
+                        height: 4,
+                        src: "img/shot.png",
+                        img: new Image()
+                    };
+                    shot.img.src = shot.src; // Laser-Bild wird geladen
+                    shots.push(shot);
+                
+                }
+        }
+
+        function checkForCollison(){
+            ufos.forEach(function(ufo){
+                if (rocket.x + rocket.width > ufo.x &&
+                    rocket.y + rocket.height > ufo.y &&
+                    rocket.x < ufo.x &&
+                    rocket.y < ufo.y + ufo.height       
+                ) { 
+                    rocket.img.src = "img/boom.png";
+                    console.log('Collision!!!');
+                    ufos = ufos.filter(u => u != ufo);
+                    cancelled = true;
+                    ufos = [];
+                    let text = "GAME OVER!!!  SCORE: " + count;
+                    counter.innerHTML = text;
+                }
+                shots.forEach(function(shot){
+                    if (shot.x + shot.width > ufo.x &&
+                        shot.y + shot.height > ufo.y &&
+                        shot.x < ufo.x &&
+                        shot.y < ufo.y + ufo.height
+                    ){ 
+                        ufo.hit = true; // muss nicht sein
+                        ufo.img.src = "img/boom.png";
+                        console.log("HIT");
+                        ufos = ufos.filter(u => u != ufo);
+                        shots = shots.filter(s => s != shot);
+                        count += 1;
+                        let text = "Treffer: " + count;
+                        counter.innerHTML = text;
+                    }
+                })
+            });
+        }
+
+        function createUfos(){
+            let ufo = {
+                x: 1200,
+                y: Math.random() * 430,
+                width: 100,
+                height: 40,
+                src: "img/ufo.png",
+                img: new Image()
+            };
+
+            ufo.img.src = ufo.src; // Ufo-Bild wird geladen
+        
+            ufos.push(ufo);
+
+            if (cancelled){   // wird man getroffen: alle ufos verschwinden
+                ufos = ufos.filter(u => u!=ufo);
+            }
+        }
+
+        function updateShip(){
+            if(KEY_UP){
+                rocket.y = Math.min(Math.max(rocket.y-10, 0), canvas.height - 40);
+
+            }
+            else if(KEY_DOWN){
+                rocket.y = Math.min(Math.max(rocket.y+10, 0), canvas.height - 40);
+
+            }
+        }
+
+        function updateUfosAndShots(){
+            ufos.forEach(function(ufo){
+                ufo.x -= 10;
+            });
+
+            shots.forEach(function(shot){
+                shot.x += 10;
+            });
+        }
+
+        function loadImages(){
+            backgroundImage.src = "img/background.png";
+            rocket.img = new Image(); //alle Infos in Jason: Ein Container mit mehreren Variablen gespeichert
+            rocket.img.src = rocket.src;
+
+        
+        }
+
+        function draw(){
+            //so zeigt man seine grafik an:
+            ctx.drawImage(backgroundImage, 0, 0);
+            ctx.drawImage(rocket.img, rocket.x, rocket.y, rocket.width, rocket.height);
+            
+            ufos.forEach(function(ufo){
+                ctx.drawImage(ufo.img, ufo.x, ufo.y, ufo.width, ufo.height);
+            });
+            
+            shots.forEach(function(shot){
+                ctx.drawImage(shot.img, shot.x, shot.y, shot.width, shot.height);
+            });
+
+            requestAnimationFrame(draw); //Funktion draw wird so häufig wie möglich aufgerufen
+
+        }
+
+       
+    </script>
+
+</head>
+<body onload="startGame()">
+    <canvas id="canvas" width="1200" height="480">
+
+    </canvas>
+
+    <div class="counter maps-center" id="counter">
+        Treffer: 
+    </div>
+
+    <div>
+
+    </div>
+    
+</body>
+</html>
